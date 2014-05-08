@@ -122,7 +122,7 @@ for layer, ts in tiles.iteritems():
 # visualization check for two patches and one tile per patch
 # comment out for application on real data!
 
-from jarray import zeros
+# from jarray import zeros
 
 # for layer, ts in tiles.iteritems():
 #     for patch, tileList in ts.iteritems():
