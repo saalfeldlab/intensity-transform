@@ -2,7 +2,6 @@ package org.janelia.alignment.intensity;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.TreeMap;
 
 import org.janelia.alignment.intensity.PointGenerator;
@@ -46,20 +45,40 @@ public class PointMatchGenerator<T extends RealType<T> & NativeType<T>, U extend
 	private final TreeMap<ValuePair<Long, Long>, ArrayList<PointMatch> > pointMatches;
 	private final boolean withPointList;
 	private final PointSelector<T, U, V, W> selector;
+	private final T min1;
+	private final T range1;
+	private final U min2;
+	private final U range2;
 
 	public PointMatchGenerator(TreeMap<ValuePair<Long, Long>, ArrayList<PointMatch> > pointMatches, 
 			                   boolean withPointList,
-			                   PointSelector<T, U, V, W> selector) {
+			                   PointSelector<T, U, V, W> selector,
+			                   T min1,
+			                   T range1,
+			                   U min2,
+			                   U range2) {
 		super();
 		this.pointMatches  = pointMatches;
 		this.withPointList = withPointList;
 		this.selector      = selector;
+		this.min1          = min1;
+		this.range1        = range1;
+		this.min2          = min2;
+		this.range2        = range2;
 	}
 
-	public PointMatchGenerator(PointSelector<T, U, V, W> selector) {
+	public PointMatchGenerator(PointSelector<T, U, V, W> selector,
+                               T min1,
+                               T range1,
+                               U min2,
+                               U range2) {
 		this(new TreeMap<ValuePair<Long, Long>, ArrayList<PointMatch> >(new PairComparator()), 
 		     false,
-		     selector);
+		     selector,
+		     min1,
+		     range1,
+		     min2,
+		     range2);
 	}
 
 	/**
@@ -165,8 +184,8 @@ public class PointMatchGenerator<T extends RealType<T> & NativeType<T>, U extend
 	    			this.pointMatches.put(k, new ArrayList<PointMatch>());
 	    		}
 	    		this.pointMatches.get(k).
-	    			add(new PointMatch(new Point(new float[]{intensities1.get().getRealFloat()}),
-	    					           new Point(new float[]{intensities2.get().getRealFloat()}))
+	    			add(new PointMatch(new Point(new float[]{ ( intensities1.get().getRealFloat() - this.min1.getRealFloat()) / this.range1.getRealFloat() } ),
+	    					           new Point(new float[]{ ( intensities2.get().getRealFloat() - this.min2.getRealFloat()) / this.range2.getRealFloat() } ) )
 	    					           );
 	    	} else {
 	    		continue;
