@@ -95,6 +95,8 @@ lambda2 = 0.1
 
 scaleFactor = 0.1
 
+intraPatchSimilarityRegularizationWeight = 1.0
+
 optimizationOptions = { 'error' : 100.0, 'maxIterations' : 10, 'maxPlateau' : 10 }
 
 
@@ -204,6 +206,28 @@ for layer, patches in patchMatchesPerLayer.iteritems():
                     tilesAtPatch[entryset.getKey().a].connect(tilesAtMatch[entryset.getKey().b], inliers)
                 except NotEnoughDataPointsException:
                     pass
+
+
+print "Add smoothness constraint between (neighboring) tiles within a patch (%s) ... " % addTime.addString()
+
+for layer, ts in tiles.iteritems():
+    tilesAt = tiles[layer]
+    for patch, tileList in ts.iteritems():
+        tilesAtPatch = tilesAt[patch]
+        for x in xrange(shape[0]):
+            for y in xrange(shape[1]):
+                pointMatches = ArrayList(2)
+                pointMatches.add(PointMatch(1.0, 1.0, intraPatchSimilarityRegularizationWeight))
+                pointMatches.add(PointMatch(0.0, 0.0, intraPatchSimilarityRegularizationWeight))
+                currIndex = x + shape[0] * y
+                # actual index + 1, as tiles do not have zero index in order to avoid confusion with background
+                # cf loop starting after 'print "Generate tiles (%s) ... " % addTime.addString()'
+                if x + 1 < shape[0]:
+                    neighborIndex = currIndex + 1
+                    tilesAtPatch[currIndex + 1].connect(tilesAtPatch[neighborIndex + 1], pointMatches)
+                if y + 1 < shape[1]:
+                    neighborIndex = currIndex + shape[0]
+                    tilesAtPatch[currIndex + 1].connect(tilesAtPatch[neighborIndex + 1], pointMatches)
                     
 
 print "Add tiles to TileConfiguration if enough point matches and optimize (%s) ... " % addTime.addString()
