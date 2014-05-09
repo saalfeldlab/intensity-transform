@@ -46,3 +46,13 @@ def generateOverlay(project, patch, shape):
     overlayPatch.setAffineTransform(patch.getAffineTransform())
     overlayPatch.setCoordinateTransform(patch.getCoordinateTransform())
     return overlayPatch
+
+
+def getPreTransform(patch):
+    minValue   = patch.getMin()
+    rangeValue = patch.getMax() - minValue
+    return (minValue, rangeValue)
+
+
+def getMaxRange(processor):
+    return processor.minValue(), processor.maxValue()

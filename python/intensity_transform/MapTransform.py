@@ -1,4 +1,5 @@
 from ij.process import ShortProcessor
+from ij.process import FloatProcessor
 
 from mpicbg.models import TranslationModel2D
 from mpicbg.models import CoordinateTransformList
@@ -8,8 +9,11 @@ from mpicbg.trakem2.transform import TransformMeshMappingWithMasks
 
 class MapTransform(object):
     @staticmethod
-    def doMap(patch, roi, background=0.0):
-        target = ShortProcessor(roi.width, roi.height)
+    def doMap(patch, roi, background=0.0, interpolate=False, floatp=False):
+        if floatp:
+            target = FloatProcessor(roi.width, roi.height)
+        else:
+            target = ShortProcessor(roi.width, roi.height)
         if background != 0.0:
             target.setValue(background)
             target.setRoi(0, 0, roi.width, roi.height)
@@ -26,7 +30,13 @@ class MapTransform(object):
 
         mapping = TransformMeshMappingWithMasks( mesh );
 
-        # patch.getImageProcessor().setInterpolationMethod( ImageProcessor.BILINEAR )
-        mapping.map( patch.getImageProcessor(), target )
+        source = patch.getImageProcessor()
+        if floatp:
+            source = source.convertToFloatProcessor()
+        if interpolate:
+            # patch.getImageProcessor().setInterpolationMethod( ImageProcessor.BILINEAR )
+            mapping.mapInterpolated( source, target )
+        else:
+            mapping.map( source, target )
 
         return target
