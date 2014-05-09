@@ -7,6 +7,7 @@ import errno
 from ij import ImagePlus
 
 from ini.trakem2.display import Patch, Layer, Display
+from ini.trakem2.persistence import FSLoader
 
 from org.janelia.alignment.intensity import PointSelectorIgnoreBackground
 from org.janelia.alignment.intensity import PointSelectorIgnoreBackgroundAndOutliers
@@ -15,6 +16,8 @@ from org.janelia.alignment.intensity import ApplyTransform
 
 from jarray import zeros
 
+from java.io import File
+from java.lang import Long
 from java.util import ArrayList
 
 from mpicbg.models import AffineModel1D
@@ -50,6 +53,14 @@ for x in xrange(shape[0]):
         subscriptToIndex[helperIndex] = (x, y)
         helperIndex += 1
 
+
+# use coordinate transform folder to specify output folder
+ctsFolder     = display.project.getLoader().getCoordinateTransformsFolder().rstrip('/')
+lastFolderIdx = len(ctsFolder.split('/')) - 1
+itsFolder     = '/'.join(ctsFolder.split('/')[:-1]) + '/trakem2.its/'
+File(itsFolder).mkdirs()
+
+
 # At the moment, all overlays, PointMatches, etc. are kept in memory while iterating over all layers.
 # In future, memory should be released after saving the result.
 
@@ -68,6 +79,9 @@ matchedPointsPerLayer = defaultdict(lambda : defaultdict(lambda : defaultdict(li
 # For each layer and patch store the appropriate tile:
 # { layer : { patch : { id : Tile } } }
 tiles                 = defaultdict(lambda : defaultdict(dict))
+
+# { layer : { Patch : inverseMap } }
+inverseMapTransforms  = defaultdict(dict)
 
 
 tileConfigs           = {}
@@ -120,7 +134,10 @@ for layer, patches in patchMatchesPerLayer.iteritems():
     for patch, matches in patches.iteritems():
         matchedPointsAtPatch = matchedPoints[patch]
         tilesAtPatch         = tilesAt[patch]
-        patchPreTransform    = getPreTransform(patch) 
+        patchPreTransform    = getPreTransform(patch)
+        
+        inverseMapTransforms[layer][patch] = InverseMapTransform(patchPreTransform[0], patchPreTransform[1], 255)
+
         for match in matches:
             matchPreTransform   = getPreTransform(match[0])
             # saturated and zero value pixels should be ignored
@@ -137,6 +154,7 @@ for layer, patches in patchMatchesPerLayer.iteritems():
                                                       FloatType(patchPreTransform[1]),
                                                       FloatType(matchPreTransform[0]),
                                                       FloatType(matchPreTransform[1]))
+
             
             tilesAtMatch = tilesAt[match[0]]
             bb = match[1].getBounds()
@@ -203,7 +221,8 @@ for layer, ts in tiles.iteritems():
     print "After optimization (%s) ... " %addTime.addString()
 
 
-print "Write transformed images to file (%s) ... " % addTime.addString()
+# print "Write transformed images to file (%s) ... " % addTime.addString()
+print "Saving files into directory %s (%s) ... " % (itsFolder, addTime.addString())
 
 for layer, ts in tiles.iteritems():
     for patch, tileList in ts.iteritems():
@@ -211,14 +230,14 @@ for layer, ts in tiles.iteritems():
         ifpArr = ifp.split( '/' )
         newDir = '/'.join(ifpArr[:-1]) + '/transforms'
         newFn  = newDir + '/%s' % ifpArr[-1]
-        width  = patch.getOWidth()
-        height = patch.getOHeight()
-        stepX  = width/shape[0]
-        stepY  = height/shape[1]
+        width  = shape[0]
+        height = shape[1]
+        stepX  = 1
+        stepY  = 1
 
-        # todo: create dirs for result images and save them!
-        # os.makedirs( newDir, exist_ok = True )
-        
+        filePath = itsFolder + display.project.getLoader().createIdPath(Long.toString(patch.getCoordinateTransformId()),
+                                                                        Long.toString(patch.getId()),
+                                                                        '.it')
         resultStack = ImageStack( width, height, 2 )
         parameter1p = FloatProcessor( width, height )
         parameter2p = FloatProcessor( width, height )
@@ -226,18 +245,12 @@ for layer, ts in tiles.iteritems():
         resultStack.setProcessor( parameter2p, 2 )
         resultImage = ImagePlus("", resultStack)
         for idx, t in sorted( tileList.iteritems(), key=lambda x : x[0] ):
-            # x = ( idx - 1 ) % shape[0]
-            # y = ( idx - 1 - x ) / shape[0]
             model = zeros( 2, 'd' )
             t.getModel().toArray( model )
             x, y = subscriptToIndex[idx - 1]
-            parameter1p.setRoi(x*stepX, y*stepY, stepX, stepY)
-            parameter2p.setRoi(x*stepX, y*stepY, stepX, stepY)
-            parameter1p.setValue(model[0])
-            parameter2p.setValue(model[1])
-            parameter1p.fill()
-            parameter2p.fill()
-        IJ.saveAsTiff( resultImage, "%s_transform.tif" % patch ) 
+            parameter1p.setf(x, y, inverseMapTransforms[layer][patch].getNewLinearTerm(model[0]))
+            parameter2p.setf(x, y, inverseMapTransforms[layer][patch].getNewConstantTerm(model[0], model[1]))
+        IJ.saveAsTiff( resultImage, filePath )
 
 
 # visualization check for two patches and one tile per patch
