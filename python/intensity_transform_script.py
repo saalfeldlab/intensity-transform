@@ -8,10 +8,10 @@ from ij import ImagePlus
 
 from ini.trakem2.display import Patch, Layer, Display
 
-from janelia.saalfeldlab.intensity import PointSelectorIgnoreBackground
-from janelia.saalfeldlab.intensity import PointSelectorIgnoreBackgroundAndOutliers
-from janelia.saalfeldlab.intensity import PointMatchGenerator
-from janelia.saalfeldlab.intensity import ApplyTransform
+from org.janelia.alignment.intensity import PointSelectorIgnoreBackground
+from org.janelia.alignment.intensity import PointSelectorIgnoreBackgroundAndOutliers
+from org.janelia.alignment.intensity import PointMatchGenerator
+from org.janelia.alignment.intensity import ApplyTransform
 
 from jarray import zeros
 
