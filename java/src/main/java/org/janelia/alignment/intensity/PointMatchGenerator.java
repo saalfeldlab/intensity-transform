@@ -1,9 +1,11 @@
-package janelia.saalfeldlab.intensity;
+package org.janelia.alignment.intensity;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.TreeMap;
+
+import org.janelia.alignment.intensity.PointGenerator;
 
 import mpicbg.models.PointMatch;
 import net.imglib2.Cursor;
@@ -15,7 +17,6 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
-import janelia.saalfeldlab.intensity.PointGenerator;
 
 public class PointMatchGenerator<T extends RealType<T> & NativeType<T>, U extends RealType<U> & NativeType<U>,
                                  V extends IntegerType<V> & NativeType<V>, W extends IntegerType<W>  & NativeType<W> > implements PointGenerator<T, U, V, W> {

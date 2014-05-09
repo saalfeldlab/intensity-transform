@@ -1,4 +1,4 @@
-package janelia.saalfeldlab.intensity;
+package org.janelia.alignment.intensity;
 
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.numeric.IntegerType;
