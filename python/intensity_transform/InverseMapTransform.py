@@ -8,7 +8,7 @@ class InverseMapTransform(object):
         return self.scaleFactor * linearTerm / self.originalRange
 
     def getNewConstantTerm(self, linearTerm, constantTerm):
-        return self.scaleFactor * ( linearTerm * self.originalMin / self.originalRange  + constantTerm )
+        return self.scaleFactor * ( - linearTerm * self.originalMin / self.originalRange  + constantTerm )
     
     def doMap(self, linearTerm, constantTerm):
         return ( self.getNewLinearTerm(linearTerm), self.getNewConstantTerm(linearTerm, constantTerm) )
