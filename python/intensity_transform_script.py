@@ -24,6 +24,8 @@ from mpicbg.models import AffineModel1D
 from mpicbg.models import IdentityModel
 from mpicbg.models import InterpolatedAffineModel1D
 from mpicbg.models import NotEnoughDataPointsException
+from mpicbg.models import Point
+from mpicbg.models import PointMatch
 from mpicbg.models import Tile
 from mpicbg.models import TileConfiguration 
 from mpicbg.models import TranslationModel1D
@@ -97,7 +99,7 @@ scaleFactor = 0.1
 
 intraPatchSimilarityRegularizationWeight = 1.0
 
-optimizationOptions = { 'error' : 100.0, 'maxIterations' : 10, 'maxPlateau' : 10 }
+optimizationOptions = { 'error' : 1.0, 'maxIterations' : 1000, 'maxPlateau' : 100 }
 
 
 class AddTime(object):
@@ -217,8 +219,8 @@ for layer, ts in tiles.iteritems():
         for x in xrange(shape[0]):
             for y in xrange(shape[1]):
                 pointMatches = ArrayList(2)
-                pointMatches.add(PointMatch(1.0, 1.0, intraPatchSimilarityRegularizationWeight))
-                pointMatches.add(PointMatch(0.0, 0.0, intraPatchSimilarityRegularizationWeight))
+                pointMatches.add(PointMatch(Point([1.0]), Point([1.0]), intraPatchSimilarityRegularizationWeight))
+                pointMatches.add(PointMatch(Point([0.0]), Point([0.0]), intraPatchSimilarityRegularizationWeight))
                 currIndex = x + shape[0] * y
                 # actual index + 1, as tiles do not have zero index in order to avoid confusion with background
                 # cf loop starting after 'print "Generate tiles (%s) ... " % addTime.addString()'
@@ -250,18 +252,15 @@ print "Saving files into directory %s (%s) ... " % (itsFolder, addTime.addString
 
 for layer, ts in tiles.iteritems():
     for patch, tileList in ts.iteritems():
-        ifp    = patch.getImageFilePath()
-        ifpArr = ifp.split( '/' )
-        newDir = '/'.join(ifpArr[:-1]) + '/transforms'
-        newFn  = newDir + '/%s' % ifpArr[-1]
         width  = shape[0]
         height = shape[1]
         stepX  = 1
         stepY  = 1
 
-        filePath = itsFolder + display.project.getLoader().createIdPath(Long.toString(patch.getCoordinateTransformId()),
-                                                                        Long.toString(patch.getId()),
-                                                                        '.it')
+        filePath = itsFolder + display.project.getLoader().createIdPath(Long.toString(patch.getId()),
+        								'it',
+                                                                        '.tif')
+        File(filePath).getParentFile().mkdirs()
         resultStack = ImageStack( width, height, 2 )
         parameter1p = FloatProcessor( width, height )
         parameter2p = FloatProcessor( width, height )
