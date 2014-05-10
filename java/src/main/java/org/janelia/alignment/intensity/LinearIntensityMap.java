@@ -45,13 +45,13 @@ import net.imglib2.view.composite.RealComposite;
  *
  * @author Stephan Saalfeld <saalfelds@janelia.hhmi.org>
  */
-public class IntensityTransform< T extends RealType< T > >
+public class LinearIntensityMap< T extends RealType< T > >
 {
 	final protected Dimensions dimensions;
 	final protected Translation translation;
 	final protected RandomAccessible< RealComposite< T > > coefficients;
 	
-	public IntensityTransform( final RandomAccessibleInterval< T > source )
+	public LinearIntensityMap( final RandomAccessibleInterval< T > source )
 	{
 		final CompositeIntervalView< T, RealComposite< T > > collapsedSource = Views.collapseReal( source );
 		dimensions = new FinalInterval( collapsedSource );
@@ -120,7 +120,7 @@ public class IntensityTransform< T extends RealType< T > >
 				120, 130, 140, 150
 		};
 		
-		final IntensityTransform< DoubleType > transform = new IntensityTransform< DoubleType >( ArrayImgs.doubles( coefficients, 4, 4, 2 ) );
+		final LinearIntensityMap< DoubleType > transform = new LinearIntensityMap< DoubleType >( ArrayImgs.doubles( coefficients, 4, 4, 2 ) );
 		
 		final ImagePlus imp = new ImagePlus( "http://upload.wikimedia.org/wikipedia/en/2/24/Lenna.png" );
 		final ImagePlus imp2 = new ImagePlus( "http://fly.mpi-cbg.de/~saalfeld/Pictures/norway.jpg");
