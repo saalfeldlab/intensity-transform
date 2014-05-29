@@ -45,7 +45,39 @@ import net.imglib2.img.list.ListRandomAccess;
  */
 public class MatchIntensities implements PlugIn
 {
-	private MatchIntensities(){}
+	protected Project project;
+	
+	protected double scale = 0.025;
+//	protected double scale = 1;
+	protected int numCoefficients = 4;
+	
+	protected float lambda1 = 0.01f;
+	protected float lambda2 = 0.5f;
+	
+	protected float neighborWeight = 0.1f;
+	
+//	protected PointMatchFilter filter = new RansacRegressionFilter();
+	protected PointMatchFilter filter = new RansacRegressionReduceFilter();
+	
+	public void setup(
+			final Project project,
+			final double scale )
+	{
+		this.project = project;
+		protected double scale = 0.025;
+//		protected double scale = 1;
+		protected int numCoefficients = 4;
+		
+		protected float lambda1 = 0.01f;
+		protected float lambda2 = 0.5f;
+		
+		protected float neighborWeight = 0.1f;
+		
+//		protected PointMatchFilter filter = new RansacRegressionFilter();
+		protected PointMatchFilter filter = new RansacRegressionReduceFilter();
+		
+		
+	}
 	
 	final static protected < T extends Model< T > & Affine1D< T > >HashMap< Patch, ArrayList< Tile< T > > > generateCoefficientsTiles( final Collection< Patch > patches, final T template, final int nCoefficients )
 	{
@@ -90,20 +122,8 @@ public class MatchIntensities implements PlugIn
 		run( project );
 	}
 	
-	final static public void run( final Project project )
+	final public void run( final Project project )
 	{	
-		final double scale = 0.025;
-//		final double scale = 1;
-		final int numCoefficients = 4;
-		
-		final float lambda1 = 0.01f;
-		final float lambda2 = 0.5f;
-		
-		final float neighborWeight = 0.1f;
-		
-//		final PointMatchFilter filter = new RansacRegressionFilter();
-		final PointMatchFilter filter = new RansacRegressionReduceFilter();
-		
 		final Layer layer = project.getRootLayerSet().getLayer( 0 );
 		
 		@SuppressWarnings( { "rawtypes", "unchecked" } )
