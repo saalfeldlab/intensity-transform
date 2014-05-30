@@ -61,22 +61,23 @@ public class MatchIntensities implements PlugIn
 	
 	public void setup(
 			final Project project,
-			final double scale )
+			final double scale,
+			final int numCoefficients,
+			final float lambda1,
+			final float lambda2,
+			final float neighborWeight,
+			final PointMatchFilter filter )
 	{
 		this.project = project;
-		protected double scale = 0.025;
-//		protected double scale = 1;
-		protected int numCoefficients = 4;
+		this.scale = scale;
+		this.numCoefficients = numCoefficients;
 		
-		protected float lambda1 = 0.01f;
-		protected float lambda2 = 0.5f;
+		this.lambda1 = lambda1;
+		this.lambda2 = lambda2;
 		
-		protected float neighborWeight = 0.1f;
+		this.neighborWeight = neighborWeight;
 		
-//		protected PointMatchFilter filter = new RansacRegressionFilter();
-		protected PointMatchFilter filter = new RansacRegressionReduceFilter();
-		
-		
+		this.filter = filter;
 	}
 	
 	final static protected < T extends Model< T > & Affine1D< T > >HashMap< Patch, ArrayList< Tile< T > > > generateCoefficientsTiles( final Collection< Patch > patches, final T template, final int nCoefficients )
@@ -111,7 +112,7 @@ public class MatchIntensities implements PlugIn
 	@Override
 	final public void run( final String args )
 	{
-		final Project project = ControlWindow.getActive();
+		project = ControlWindow.getActive();
 		
 		if ( project == null )
 		{
@@ -119,10 +120,10 @@ public class MatchIntensities implements PlugIn
 			return;
 		}
 		
-		run( project );
+		run();
 	}
 	
-	final public < M extends Model< M > & Affine1D< M > >void run( final Project project )
+	final public < M extends Model< M > & Affine1D< M > >void run()
 	{
 		final Layer layer = project.getRootLayerSet().getLayer( 0 );
 		
@@ -353,6 +354,16 @@ public class MatchIntensities implements PlugIn
 		
 		final Project project = Project.openFSProject( "/home/saalfeld/tmp/bock-lens-correction/subproject.xml", false );
 		
-		run( project );
+		final MatchIntensities matcher = new MatchIntensities();
+		matcher.setup(
+				project,
+				0.05,
+				4,
+				0.01f,
+				0.5f,
+				0.1f,
+				new RansacRegressionReduceFilter() );
+		
+		new MatchIntensities().run();
 	}
 }
