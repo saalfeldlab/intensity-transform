@@ -4,6 +4,7 @@
 package org.janelia.alignment.intensity;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import mpicbg.models.AffineModel1D;
@@ -24,8 +25,25 @@ public class RansacRegressionReduceFilter implements PointMatchFilter
 	final protected int minNumInliers = 10;
 	final protected float maxTrust = 3.0f;
 	
+	final static protected float[] minMax( final Iterable< PointMatch > matches )
+	{
+		final Iterator< PointMatch > iter = matches.iterator();
+		PointMatch m = iter.next();
+		float min = m.getP1().getL()[ 0 ], max = min;
+		while ( iter.hasNext() )
+		{
+			m = iter.next();
+			final float x = m.getP1().getL()[ 0 ];
+			if ( x < min )
+				min = x;
+			else if ( x > max )
+				max = x;
+		}
+		return new float[]{ min, max };
+	}
+	
 	@Override
-	public void filter( List< PointMatch > candidates, Collection< PointMatch > inliers )
+	public void filter( final List< PointMatch > candidates, final Collection< PointMatch > inliers )
 	{
 		try
 		{
@@ -41,10 +59,13 @@ public class RansacRegressionReduceFilter implements PointMatchFilter
 			{
 				model.fit( inliers );
 				
+				
+				final float[] minMax = minMax( inliers );
+				
 				inliers.clear();
 				
-				final Point p1 = new Point( new float[]{ 0 } );
-				final Point p2 = new Point( new float[]{ 1 } );
+				final Point p1 = new Point( new float[]{ minMax[ 0 ] } );
+				final Point p2 = new Point( new float[]{ minMax[ 1 ] } );
 				p1.apply( model );
 				p2.apply( model );
 				inliers.add( new PointMatch( p1, new Point( p1.getW().clone() ) ) );
@@ -53,7 +74,7 @@ public class RansacRegressionReduceFilter implements PointMatchFilter
 			else
 					inliers.clear();
 		}
-		catch ( Exception e )
+		catch ( final Exception e )
 		{
 			inliers.clear();
 		}
