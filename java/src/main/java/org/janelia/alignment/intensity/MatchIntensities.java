@@ -80,14 +80,21 @@ public class MatchIntensities implements PlugIn
 		this.filter = filter;
 	}
 	
-	final static protected < T extends Model< T > & Affine1D< T > >HashMap< Patch, ArrayList< Tile< T > > > generateCoefficientsTiles( final Collection< Patch > patches, final T template, final int nCoefficients )
+	final static protected < T extends Model< T > & Affine1D< T >, S extends Model< S > & Affine1D< S > >HashMap< Patch, ArrayList< Tile< ? > > > generateCoefficientsTiles(
+			final Collection< Patch > patches,
+			final T template,
+			final S regularizerTemplate,
+			final float lambda1,
+			final float lambda2,
+			final int nCoefficients )
 	{
-		final HashMap< Patch, ArrayList< Tile< T > > > map = new HashMap< Patch, ArrayList< Tile < T > > >();
+		final HashMap< Patch, ArrayList< Tile< ? > > > map = new HashMap< Patch, ArrayList< Tile< ? > > >();
 		for ( final Patch p : patches )
 		{
-			final ArrayList< Tile< T > > coefficientModels = new ArrayList< Tile< T > >();
+			/* TODO build a pyramid of tiles with those in higher levels being regularized by those in the level below */
+			final ArrayList< Tile< ? > > coefficientModels = new ArrayList< Tile< ? > >();
 			for ( int i = 0; i < nCoefficients; ++i )
-				coefficientModels.add( new Tile< T >( template.copy() ) );
+				coefficientModels.add( new Tile< InterpolatedAffineModel1D< T, S > >( new InterpolatedAffineModel1D< T, S >( template.copy(), regularizerTemplate.copy(), lambda1 ) ) );
 			
 			map.put( p, coefficientModels );
 		}
@@ -123,7 +130,7 @@ public class MatchIntensities implements PlugIn
 		run();
 	}
 	
-	final public < M extends Model< M > & Affine1D< M > >void run()
+	final public void run()
 	{
 		final Layer layer = project.getRootLayerSet().getLayer( 0 );
 		
@@ -131,15 +138,15 @@ public class MatchIntensities implements PlugIn
 		final ArrayList< Patch > patches = ( ArrayList )layer.getDisplayables( Patch.class );
 		
 		/* generate coefficient tiles for all patches */
-		final HashMap< Patch, ArrayList< Tile< ? extends M > > > coefficientsTiles = ( HashMap )generateCoefficientsTiles(
+		final HashMap< Patch, ArrayList< Tile< ? > > > coefficientsTiles = generateCoefficientsTiles(
 						patches,
-						new InterpolatedAffineModel1D< InterpolatedAffineModel1D< AffineModel1D, TranslationModel1D >, IdentityModel >(
-								new InterpolatedAffineModel1D< AffineModel1D, TranslationModel1D>(
-										new AffineModel1D(),
-										new TranslationModel1D(),
-										lambda1 ),
+						new AffineModel1D(),
+						new InterpolatedAffineModel1D< TranslationModel1D, IdentityModel >(
+								new TranslationModel1D(),
 								new IdentityModel(),
 								lambda2 ),
+						lambda1,
+						0.1f,
 						numCoefficients * numCoefficients );
 		
 		/* completed patches */
@@ -155,7 +162,7 @@ public class MatchIntensities implements PlugIn
 			final Collection< Patch > p2s = ( Collection )layer.getDisplayables( Patch.class, box1 );
 			
 			/* get the coefficient tiles */
-			final ArrayList< Tile< ? extends M > > p1CoefficientsTiles = coefficientsTiles.get( p1 );
+			final ArrayList< Tile< ? > > p1CoefficientsTiles = coefficientsTiles.get( p1 );
 			
 			for ( final Patch p2 : p2s )
 			{
@@ -204,17 +211,23 @@ public class MatchIntensities implements PlugIn
 								if ( w2 > 0 )
 								{
 									final float p = pixels1.getf( i );
-									final float q = pixels2.getf( i );
-									final PointMatch pq =
-											new PointMatch(
-													new Point( new float[]{ p } ),
-													new Point( new float[]{ q } ),
-													w1 * w2 );
-									
-									/* first label is 1 */
-									ra.setPosition( c1 - 1, 0 );
-									ra.setPosition( c2 - 1, 1 );
-									ra.get().add( pq );
+									if ( p > 0.0f && p < 1.0f )
+									{
+										final float q = pixels2.getf( i );
+										if ( q > 0.0f && q < 1.0f )
+										{
+											final PointMatch pq =
+													new PointMatch(
+															new Point( new float[]{ p } ),
+															new Point( new float[]{ q } ),
+															w1 * w2 );
+											
+											/* first label is 1 */
+											ra.setPosition( c1 - 1, 0 );
+											ra.setPosition( c2 - 1, 1 );
+											ra.get().add( pq );
+										}
+									}
 								}
 							}
 						}
@@ -233,7 +246,7 @@ public class MatchIntensities implements PlugIn
 				}
 				
 				/* get the coefficient tiles of p2 */
-				final ArrayList< Tile< ? extends M > > p2CoefficientsTiles = coefficientsTiles.get( p2 );
+				final ArrayList< Tile< ? > > p2CoefficientsTiles = coefficientsTiles.get( p2 );
 				
 				/* connect tiles across patches */
 				for ( int i = 0; i < numCoefficients * numCoefficients; ++i )
@@ -283,7 +296,7 @@ public class MatchIntensities implements PlugIn
 		
 		/* optimize */
 		final TileConfiguration tc = new TileConfiguration();
-		for ( final ArrayList< Tile< ? extends M > > coefficients : coefficientsTiles.values() )
+		for ( final ArrayList< Tile< ? > > coefficients : coefficientsTiles.values() )
 		{
 //			for ( final Tile< ? > t : coefficients )
 //				if ( t.getMatches().size() == 0 )
@@ -293,7 +306,7 @@ public class MatchIntensities implements PlugIn
 		
 		try
 		{
-			tc.optimize( 0.01f, 5000, 5000 );
+			tc.optimize( 0.01f, 5000, 5000, 0.95f );
 		}
 		catch ( final NotEnoughDataPointsException e )
 		{
@@ -310,7 +323,7 @@ public class MatchIntensities implements PlugIn
 		final float[] ab = new float[ 2 ];
 		final FSLoader loader = ( FSLoader )project.getLoader();
 		final String itsDir = loader.getUNUIdFolder() + "trakem2.its/";
-		for ( final Entry< Patch, ArrayList< Tile< ? extends M > > > entry : coefficientsTiles.entrySet() )
+		for ( final Entry< Patch, ArrayList< Tile< ? > > > entry : coefficientsTiles.entrySet() )
 		{
 			final FloatProcessor as = new FloatProcessor( numCoefficients, numCoefficients );
 			final FloatProcessor bs = new FloatProcessor( numCoefficients, numCoefficients );
@@ -321,11 +334,11 @@ public class MatchIntensities implements PlugIn
 			final double max = p.getMax();
 			
 			
-			final ArrayList< Tile< ? extends M > > tiles = entry.getValue();
+			final ArrayList< Tile< ? > > tiles = entry.getValue();
 			for ( int i = 0; i < numCoefficients * numCoefficients; ++i )
 			{
-				final Tile< ? extends M > t = tiles.get( i );
-				final Affine1D< ? > affine = t.getModel();
+				final Tile< ? > t = tiles.get( i );
+				final Affine1D< ? > affine = ( Affine1D< ? > )t.getModel();
 				affine.toArray( ab );
 				
 				/* coefficients mapping into existing [min, max] */
@@ -348,22 +361,20 @@ public class MatchIntensities implements PlugIn
 	{
 		new ImageJ();
 		
-		final double scale = 0.05;
-//		final double scale = 1;
-		final int numCoefficients = 4;
-		
 		final Project project = Project.openFSProject( "/home/saalfeld/tmp/bock-lens-correction/subproject.xml", false );
+//		final Project project = Project.openFSProject( "/home/saalfeld/tmp/preibisch/fish.xml", false );
 		
 		final MatchIntensities matcher = new MatchIntensities();
+		
 		matcher.setup(
 				project,
 				0.05,
-				4,
-				0.01f,
+				16,
+				0.1f,
 				0.5f,
 				0.1f,
 				new RansacRegressionReduceFilter() );
 		
-		new MatchIntensities().run();
+		matcher.run();
 	}
 }
