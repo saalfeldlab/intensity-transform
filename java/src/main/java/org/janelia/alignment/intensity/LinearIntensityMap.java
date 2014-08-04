@@ -34,6 +34,7 @@ import net.imglib2.img.basictypeaccess.array.ShortArray;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.interpolation.InterpolatorFactory;
 import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
+import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.realtransform.RealViews;
 import net.imglib2.realtransform.Scale;
 import net.imglib2.realtransform.Translation;
@@ -62,15 +63,28 @@ import net.imglib2.view.composite.RealComposite;
  */
 public class LinearIntensityMap< T extends RealType< T > >
 {
+	static public enum Interpolation{ NN, NL };
+	
+	final static private < T extends RealType< T > >InterpolatorFactory< RealComposite< T >, RandomAccessible< RealComposite< T > > > interpolatorFactory( final Interpolation interpolation )
+	{
+		switch ( interpolation )
+		{
+		case NN:
+			return new NearestNeighborInterpolatorFactory< RealComposite< T > >();
+		default:
+			return new NLinearInterpolatorFactory< RealComposite< T > >();
+		}
+	}
+	
 	final protected Dimensions dimensions;
 	final protected Translation translation;
 	final protected RealRandomAccessible< RealComposite< T > > coefficients;
 	
-	final protected InterpolatorFactory< RealComposite< T >, RandomAccessible< RealComposite< T > > > interpolatorFactory = new NLinearInterpolatorFactory< RealComposite< T > >(); 
-//	final protected InterpolatorFactory< RealComposite< T >, RandomAccessible< RealComposite< T > > > interpolatorFactory = new NearestNeighborInterpolatorFactory< RealComposite< T > >();
+	final protected InterpolatorFactory< RealComposite< T >, RandomAccessible< RealComposite< T > > > interpolatorFactory; 
 	
-	public LinearIntensityMap( final RandomAccessibleInterval< T > source )
+	public LinearIntensityMap( final RandomAccessibleInterval< T > source, final InterpolatorFactory< RealComposite< T >, RandomAccessible< RealComposite< T > > > interpolatorFactory )
 	{
+		this.interpolatorFactory = interpolatorFactory;
 		final CompositeIntervalView< T, RealComposite< T > > collapsedSource = Views.collapseReal( source );
 		dimensions = new FinalInterval( collapsedSource );
 		final double[] shift = new double[ dimensions.numDimensions() ];
@@ -78,8 +92,18 @@ public class LinearIntensityMap< T extends RealType< T > >
 			shift[ d ] = 0.5;
 		translation = new Translation( shift );
 		
-		final RandomAccessible< RealComposite< T > > extendedCollapsedSource = Views.extendBorder( collapsedSource ); 
+		final RandomAccessible< RealComposite< T > > extendedCollapsedSource = Views.extendBorder( collapsedSource );
 		coefficients = Views.interpolate( extendedCollapsedSource, interpolatorFactory );
+	}
+	
+	public LinearIntensityMap( final RandomAccessibleInterval< T > source )
+	{
+		this( source, new NLinearInterpolatorFactory< RealComposite< T > >() );
+	}
+	
+	public LinearIntensityMap( final RandomAccessibleInterval< T > source, final Interpolation interpolation )
+	{
+		this( source, LinearIntensityMap.< T >interpolatorFactory( interpolation ) );
 	}
 	
 	@SuppressWarnings( { "rawtypes", "unchecked" } )
