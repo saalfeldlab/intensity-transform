@@ -13,6 +13,7 @@ import ij.process.FloatProcessor;
 import ini.trakem2.ControlWindow;
 import ini.trakem2.Project;
 import ini.trakem2.display.Layer;
+import ini.trakem2.display.LayerSet;
 import ini.trakem2.display.Patch;
 import ini.trakem2.persistence.FSLoader;
 
@@ -95,9 +96,9 @@ public class MatchIntensities implements PlugIn
 	
 	final static public < M extends Model< M > & Affine1D< M > >void run( final Project project )
 	{	
-		final double scale = 0.05;
+		final double scale = 0.025;
 //		final double scale = 1;
-		final int numCoefficients = 16;
+		final int numCoefficients = 8;
 		
 		final float lambda1 = 0.01f;
 		final float lambda2 = 0.01f;
@@ -107,10 +108,11 @@ public class MatchIntensities implements PlugIn
 //		final PointMatchFilter filter = new RansacRegressionFilter();
 		final PointMatchFilter filter = new RansacRegressionReduceFilter();
 		
-		final Layer layer = project.getRootLayerSet().getLayer( 0 );
+		final LayerSet layerset = project.getRootLayerSet();
+//		final Layer layer = project.getRootLayerSet().getLayer( 0 );
 		
 		@SuppressWarnings( { "rawtypes", "unchecked" } )
-		final ArrayList< Patch > patches = ( ArrayList )layer.getDisplayables( Patch.class );
+		final ArrayList< Patch > patches = ( ArrayList )layerset.getDisplayables( Patch.class );
 		
 		/* generate coefficient tiles for all patches */
 		final HashMap< Patch, ArrayList< Tile< ? extends M > > > coefficientsTiles = ( HashMap )generateCoefficientsTiles(
@@ -133,8 +135,14 @@ public class MatchIntensities implements PlugIn
 			
 			final Rectangle box1 = p1.getBoundingBox();
 			
-			@SuppressWarnings( { "rawtypes", "unchecked" } )
-			final Collection< Patch > p2s = ( Collection )layer.getDisplayables( Patch.class, box1 );
+			final ArrayList< Patch > p2s = new ArrayList< Patch >();
+			final int layerIndex = layerset.getLayerIndex( p1.getLayer().getId() );
+			for ( int i = layerIndex - 2; i <= layerIndex + 2; ++i )
+			{
+				final Layer layer = layerset.getLayer( i );
+				if ( layer != null )
+					p2s.addAll( ( Collection )layer.getDisplayables( Patch.class, box1 ) );
+			}
 			
 			/* get the coefficient tiles */
 			final ArrayList< Tile< ? extends M > > p1CoefficientsTiles = coefficientsTiles.get( p1 );
@@ -275,7 +283,7 @@ public class MatchIntensities implements PlugIn
 		
 		try
 		{
-			tc.optimize( 0.01f, 5000, 5000 );
+			tc.optimize( 0.01f, 2000, 2000, 0.5f );
 		}
 		catch ( final NotEnoughDataPointsException e )
 		{
@@ -332,10 +340,12 @@ public class MatchIntensities implements PlugIn
 		
 		final double scale = 0.05;
 //		final double scale = 1;
-		final int numCoefficients = 4;
+		final int numCoefficients = 8;
 		
 //		final Project project = Project.openFSProject( "/home/saalfeld/tmp/bock-lens-correction/subproject.xml", false );
-		final Project project = Project.openFSProject( "/groups/saalfeld/home/saalfelds/experiments/bock-lens-correction/subproject.xml", false );
+//		final Project project = Project.openFSProject( "/groups/saalfeld/home/saalfelds/experiments/bock-lens-correction/subproject.xml", false );
+		final Project project = Project.openFSProject( "/data_ssd2/saalfeld/davi-movie/fly-63/140604_elastic_registered_AL_Maria-Luisa_ground_truth_v01.xml", false );
+//		final Project project = Project.openFSProject( "/data/saalfeld/hildebrand/140609T1130_AlignIntraSectionSubproject/TrakEM2_140609T1130_AlignIntraSectionSubproject_MipMaps.xml", false );
 //		final Project project = Project.openFSProject( "/groups/saalfeld/home/saalfelds/experiments/bock-lens-correction/test-fly.140212133-affine.xml", false );
 		run( project );
 	}
