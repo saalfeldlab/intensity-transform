@@ -96,7 +96,7 @@ public class MatchIntensities implements PlugIn
 	
 	final static public < M extends Model< M > & Affine1D< M > >void run( final Project project )
 	{	
-		final double scale = 0.025;
+		final double scale = 0.05;
 //		final double scale = 1;
 		final int numCoefficients = 8;
 		
@@ -182,10 +182,10 @@ public class MatchIntensities implements PlugIn
 				for ( int i = 0; i < n; ++i )
 				{
 					final int c1 = coefficients1.get( i );
-					if ( c1 > 0 )
+					if ( c1 > 0 && c1 < 255 )
 					{
 						final int c2 = coefficients2.get( i );
-						if ( c2 > 0 )
+						if ( c2 > 0 && c2 < 255 )
 						{
 							final float w1 = weights1.getf( i );
 							if ( w1 > 0 )
@@ -341,10 +341,12 @@ public class MatchIntensities implements PlugIn
 		final double scale = 0.05;
 //		final double scale = 1;
 		final int numCoefficients = 8;
-		
+	
+		final Project project = Project.openFSProject( "/home/saalfeld/tmp/carsten/untitled.xml", false );
+//		final Project project = Project.openFSProject( "/home/saalfeld/tmp/tif/untitled.xml", false );
 //		final Project project = Project.openFSProject( "/home/saalfeld/tmp/bock-lens-correction/subproject.xml", false );
 //		final Project project = Project.openFSProject( "/groups/saalfeld/home/saalfelds/experiments/bock-lens-correction/subproject.xml", false );
-		final Project project = Project.openFSProject( "/data_ssd2/saalfeld/davi-movie/fly-63/140604_elastic_registered_AL_Maria-Luisa_ground_truth_v01.xml", false );
+//		final Project project = Project.openFSProject( "/data_ssd2/saalfeld/davi-movie/fly-63/140604_elastic_registered_AL_Maria-Luisa_ground_truth_v01.xml", false );
 //		final Project project = Project.openFSProject( "/data/saalfeld/hildebrand/140609T1130_AlignIntraSectionSubproject/TrakEM2_140609T1130_AlignIntraSectionSubproject_MipMaps.xml", false );
 //		final Project project = Project.openFSProject( "/groups/saalfeld/home/saalfelds/experiments/bock-lens-correction/test-fly.140212133-affine.xml", false );
 		run( project );
