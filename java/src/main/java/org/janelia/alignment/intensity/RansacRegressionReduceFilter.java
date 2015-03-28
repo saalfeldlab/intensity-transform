@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package org.janelia.alignment.intensity;
 
@@ -20,28 +20,28 @@ public class RansacRegressionReduceFilter implements PointMatchFilter
 {
 	final protected Model< ? > model = new AffineModel1D();
 	final protected int iterations = 1000;
-	final protected float  maxEpsilon = 0.1f;
-	final protected float minInlierRatio = 0.1f;
+	final protected double  maxEpsilon = 0.1;
+	final protected double minInlierRatio = 0.1;
 	final protected int minNumInliers = 10;
-	final protected float maxTrust = 3.0f;
-	
-	final static protected float[] minMax( final Iterable< PointMatch > matches )
+	final protected double maxTrust = 3.0;
+
+	final static protected double[] minMax( final Iterable< PointMatch > matches )
 	{
 		final Iterator< PointMatch > iter = matches.iterator();
 		PointMatch m = iter.next();
-		float min = m.getP1().getL()[ 0 ], max = min;
+		double min = m.getP1().getL()[ 0 ], max = min;
 		while ( iter.hasNext() )
 		{
 			m = iter.next();
-			final float x = m.getP1().getL()[ 0 ];
+			final double x = m.getP1().getL()[ 0 ];
 			if ( x < min )
 				min = x;
 			else if ( x > max )
 				max = x;
 		}
-		return new float[]{ min, max };
+		return new double[]{ min, max };
 	}
-	
+
 	@Override
 	public void filter( final List< PointMatch > candidates, final Collection< PointMatch > inliers )
 	{
@@ -58,14 +58,14 @@ public class RansacRegressionReduceFilter implements PointMatchFilter
 							maxTrust ) )
 			{
 				model.fit( inliers );
-				
-				
-				final float[] minMax = minMax( inliers );
-				
+
+
+				final double[] minMax = minMax( inliers );
+
 				inliers.clear();
-				
-				final Point p1 = new Point( new float[]{ minMax[ 0 ] } );
-				final Point p2 = new Point( new float[]{ minMax[ 1 ] } );
+
+				final Point p1 = new Point( new double[]{ minMax[ 0 ] } );
+				final Point p2 = new Point( new double[]{ minMax[ 1 ] } );
 				p1.apply( model );
 				p2.apply( model );
 				inliers.add( new PointMatch( p1, new Point( p1.getW().clone() ) ) );

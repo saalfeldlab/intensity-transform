@@ -4,28 +4,26 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.TreeMap;
 
-import org.janelia.alignment.intensity.PointGenerator;
-
+import mpicbg.models.Point;
 import mpicbg.models.PointMatch;
 import net.imglib2.Cursor;
-import mpicbg.models.Point;
-import net.imglib2.util.ValuePair;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.util.ValuePair;
 import net.imglib2.view.Views;
 
 public class PointMatchGenerator<T extends RealType<T> & NativeType<T>, U extends RealType<U> & NativeType<U>,
                                  V extends IntegerType<V> & NativeType<V>, W extends IntegerType<W>  & NativeType<W> > implements PointGenerator<T, U, V, W> {
-	
-	
+
+
 	public static class PairComparator implements Comparator<ValuePair<Long, Long> > {
 
 		@Override
-		public int compare(ValuePair<Long, Long> arg0,
-				ValuePair<Long, Long> arg1) {
+		public int compare(final ValuePair<Long, Long> arg0,
+				final ValuePair<Long, Long> arg1) {
 			if (arg0.a < arg1.a) {
 				return -1;
 			} else if (arg0.a > arg1.a) {
@@ -38,10 +36,10 @@ public class PointMatchGenerator<T extends RealType<T> & NativeType<T>, U extend
 				return 0;
 			}
 		}
-		
+
 	}
-	
-	
+
+
 	private final TreeMap<ValuePair<Long, Long>, ArrayList<PointMatch> > pointMatches;
 	private final boolean withPointList;
 	private final PointSelector<T, U, V, W> selector;
@@ -50,13 +48,13 @@ public class PointMatchGenerator<T extends RealType<T> & NativeType<T>, U extend
 	private final U min2;
 	private final U range2;
 
-	public PointMatchGenerator(TreeMap<ValuePair<Long, Long>, ArrayList<PointMatch> > pointMatches, 
-			                   boolean withPointList,
-			                   PointSelector<T, U, V, W> selector,
-			                   T min1,
-			                   T range1,
-			                   U min2,
-			                   U range2) {
+	public PointMatchGenerator(final TreeMap<ValuePair<Long, Long>, ArrayList<PointMatch> > pointMatches,
+			                   final boolean withPointList,
+			                   final PointSelector<T, U, V, W> selector,
+			                   final T min1,
+			                   final T range1,
+			                   final U min2,
+			                   final U range2) {
 		super();
 		this.pointMatches  = pointMatches;
 		this.withPointList = withPointList;
@@ -67,12 +65,12 @@ public class PointMatchGenerator<T extends RealType<T> & NativeType<T>, U extend
 		this.range2        = range2;
 	}
 
-	public PointMatchGenerator(PointSelector<T, U, V, W> selector,
-                               T min1,
-                               T range1,
-                               U min2,
-                               U range2) {
-		this(new TreeMap<ValuePair<Long, Long>, ArrayList<PointMatch> >(new PairComparator()), 
+	public PointMatchGenerator(final PointSelector<T, U, V, W> selector,
+                               final T min1,
+                               final T range1,
+                               final U min2,
+                               final U range2) {
+		this(new TreeMap<ValuePair<Long, Long>, ArrayList<PointMatch> >(new PairComparator()),
 		     false,
 		     selector,
 		     min1,
@@ -90,71 +88,71 @@ public class PointMatchGenerator<T extends RealType<T> & NativeType<T>, U extend
 
 	@Override
 	public PointGenerator.Result<T, U, V, W> generate(
-			RandomAccessibleInterval<T> intensities1,
-			RandomAccessibleInterval<U> intensities2,
-			RandomAccessibleInterval<V> labels1,
-			RandomAccessibleInterval<W> labels2) {
+			final RandomAccessibleInterval<T> intensities1,
+			final RandomAccessibleInterval<U> intensities2,
+			final RandomAccessibleInterval<V> labels1,
+			final RandomAccessibleInterval<W> labels2) {
 	    if (this.withPointList) {
-	    	return generateWithPointList(Views.flatIterable(intensities1).cursor(), 
-	    			Views.flatIterable(intensities2).cursor(), 
-	    			Views.flatIterable(labels1).cursor(), 
+	    	return generateWithPointList(Views.flatIterable(intensities1).cursor(),
+	    			Views.flatIterable(intensities2).cursor(),
+	    			Views.flatIterable(labels1).cursor(),
 	    			Views.flatIterable(labels2).cursor());
 	    }
 	    else {
-	    	return generateWithoutPointList(Views.flatIterable(intensities1).cursor(), 
-	    			Views.flatIterable(intensities2).cursor(), 
-	    			Views.flatIterable(labels1).cursor(), 
+	    	return generateWithoutPointList(Views.flatIterable(intensities1).cursor(),
+	    			Views.flatIterable(intensities2).cursor(),
+	    			Views.flatIterable(labels1).cursor(),
 	    			Views.flatIterable(labels2).cursor());
 	    }
-		
+
 	}
-	
+
 	private PointGenerator.Result<T, U, V, W> generateWithPointList(
-			Cursor<T> intensities1,
-			Cursor<U> intensities2,
-			Cursor<V> labels1,
-			Cursor<W> labels2) {
-		ArrayList<T> i1 = new ArrayList<T>();
-		ArrayList<U> i2 = new ArrayList<U>();
-		ArrayList<V> l1 = new ArrayList<V>();
-		ArrayList<W> l2 = new ArrayList<W>();
-		
+			final Cursor<T> intensities1,
+			final Cursor<U> intensities2,
+			final Cursor<V> labels1,
+			final Cursor<W> labels2) {
+		final ArrayList<T> i1 = new ArrayList<T>();
+		final ArrayList<U> i2 = new ArrayList<U>();
+		final ArrayList<V> l1 = new ArrayList<V>();
+		final ArrayList<W> l2 = new ArrayList<W>();
+
 		while (intensities1.hasNext()) {
 	    	intensities1.fwd();
 	    	intensities2.fwd();
 	    	labels1.fwd();
 	    	labels2.fwd();
-	    	
+
 	    	if (this.selector.isGood(intensities1.get(), intensities2.get(), labels1.get(), labels2.get())) {
 	    		this.pointMatches.get(new ValuePair<V, W>(labels1.get(), labels2.get())).
-	    			add(new PointMatch(new Point(new float[]{intensities1.get().getRealFloat()}),
-	    					           new Point(new float[]{intensities2.get().getRealFloat()}))
+	    		add(new PointMatch(new Point(new double[]{intensities1.get().getRealDouble()}),
+	    					           new Point(new double[]{intensities2.get().getRealDouble()}))
 	    					           );
 	    		i1.add(intensities1.get());
 	    		i2.add(intensities2.get());
 	    		l1.add(labels1.get());
 	    		l2.add(labels2.get());
-	    		
+
 	    	} else {
 	    		continue;
 	    	}
 	    }
-		
-		PointGenerator.Result<T, U, V, W> result = new PointGenerator.Result<T, U, V, W>();
-		
-		
+
+		final PointGenerator.Result<T, U, V, W> result = new PointGenerator.Result<T, U, V, W>();
+
+
 		result.intensitySamples1 = new ArrayImgFactory<T>().create(new long[]{i1.size()}, i1.get(0));
 		result.intensitySamples2 = new ArrayImgFactory<U>().create(new long[]{i1.size()}, i2.get(0));
 		result.labelSamples1 = new ArrayImgFactory<V>().create(new long[]{l1.size()}, l1.get(0));
 		result.labelSamples2 = new ArrayImgFactory<W>().create(new long[]{l2.size()}, l2.get(0));
-		
+
 		{
 			int index = 0;
-			Cursor<T> ic1 = Views.flatIterable(result.intensitySamples1).cursor();
-			Cursor<U> ic2 = Views.flatIterable(result.intensitySamples2).cursor();
-			Cursor<V> lc1 = Views.flatIterable(result.labelSamples1).cursor();
-			Cursor<W> lc2 = Views.flatIterable(result.labelSamples2).cursor();
-			
+			final Cursor<T> ic1 = Views.flatIterable(result.intensitySamples1).cursor();
+			final Cursor<U> ic2 = Views.flatIterable(result.intensitySamples2).cursor();
+			final Cursor<V> lc1 = Views.flatIterable(result.labelSamples1).cursor();
+			final Cursor<W> lc2 = Views.flatIterable(result.labelSamples2).cursor();
+
 			while (ic1.hasNext()) {
 				ic1.next().set(i1.get(index));
 				ic2.next().set(i2.get(index));
@@ -163,37 +161,37 @@ public class PointMatchGenerator<T extends RealType<T> & NativeType<T>, U extend
 				++index;
 			}
 		}
-	    
+
 		return result;
 	}
-	
+
 	private PointGenerator.Result<T, U, V, W> generateWithoutPointList(
-			Cursor<T> intensities1,
-			Cursor<U> intensities2,
-			Cursor<V> labels1,
-			Cursor<W> labels2) {
+			final Cursor<T> intensities1,
+			final Cursor<U> intensities2,
+			final Cursor<V> labels1,
+			final Cursor<W> labels2) {
 	    while (intensities1.hasNext()) {
 	    	intensities1.fwd();
 	    	intensities2.fwd();
 	    	labels1.fwd();
 	    	labels2.fwd();
-	    	
+
 	    	if (this.selector.isGood(intensities1.get(), intensities2.get(), labels1.get(), labels2.get())) {
-	    		ValuePair<Long, Long> k = new ValuePair<Long, Long>(labels1.get().getIntegerLong(), labels2.get().getIntegerLong());
+	    		final ValuePair<Long, Long> k = new ValuePair<Long, Long>(labels1.get().getIntegerLong(), labels2.get().getIntegerLong());
 	    		if (!this.pointMatches.containsKey(k)) {
 	    			this.pointMatches.put(k, new ArrayList<PointMatch>());
 	    		}
 	    		this.pointMatches.get(k).
-	    			add(new PointMatch(new Point(new float[]{ ( intensities1.get().getRealFloat() - this.min1.getRealFloat()) / this.range1.getRealFloat() } ),
-	    					           new Point(new float[]{ ( intensities2.get().getRealFloat() - this.min2.getRealFloat()) / this.range2.getRealFloat() } ) )
+	    			add(new PointMatch(new Point(new double[]{ ( intensities1.get().getRealDouble() - this.min1.getRealDouble()) / this.range1.getRealDouble() } ),
+	    					           new Point(new double[]{ ( intensities2.get().getRealDouble() - this.min2.getRealDouble()) / this.range2.getRealDouble() } ) )
 	    					           );
 	    	} else {
 	    		continue;
 	    	}
 	    }
-	    
+
 		return null;
 	}
-	
-	
+
+
 }
