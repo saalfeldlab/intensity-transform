@@ -57,14 +57,14 @@ import net.imglib2.view.composite.RealComposite;
  * map is a {@link RealRandomAccessible} and the defined interval as passed as
  * an independent parameter.  If the coefficients are passed as a raster, the
  * interval is that of a raster.  The map is scaled such that it applies to
- * the interval of the input image. 
+ * the interval of the input image.
  *
  * @author Stephan Saalfeld <saalfelds@janelia.hhmi.org>
  */
 public class LinearIntensityMap< T extends RealType< T > >
 {
 	static public enum Interpolation{ NN, NL };
-	
+
 	final static private < T extends RealType< T > >InterpolatorFactory< RealComposite< T >, RandomAccessible< RealComposite< T > > > interpolatorFactory( final Interpolation interpolation )
 	{
 		switch ( interpolation )
@@ -75,13 +75,13 @@ public class LinearIntensityMap< T extends RealType< T > >
 			return new NLinearInterpolatorFactory< RealComposite< T > >();
 		}
 	}
-	
+
 	final protected Dimensions dimensions;
 	final protected Translation translation;
 	final protected RealRandomAccessible< RealComposite< T > > coefficients;
-	
-	final protected InterpolatorFactory< RealComposite< T >, RandomAccessible< RealComposite< T > > > interpolatorFactory; 
-	
+
+	final protected InterpolatorFactory< RealComposite< T >, RandomAccessible< RealComposite< T > > > interpolatorFactory;
+
 	public LinearIntensityMap( final RandomAccessibleInterval< T > source, final InterpolatorFactory< RealComposite< T >, RandomAccessible< RealComposite< T > > > interpolatorFactory )
 	{
 		this.interpolatorFactory = interpolatorFactory;
@@ -91,33 +91,33 @@ public class LinearIntensityMap< T extends RealType< T > >
 		for ( int d = 0; d < shift.length; ++d )
 			shift[ d ] = 0.5;
 		translation = new Translation( shift );
-		
+
 		final RandomAccessible< RealComposite< T > > extendedCollapsedSource = Views.extendBorder( collapsedSource );
 		coefficients = Views.interpolate( extendedCollapsedSource, interpolatorFactory );
 	}
-	
+
 	public LinearIntensityMap( final RandomAccessibleInterval< T > source )
 	{
 		this( source, new NLinearInterpolatorFactory< RealComposite< T > >() );
 	}
-	
+
 	public LinearIntensityMap( final RandomAccessibleInterval< T > source, final Interpolation interpolation )
 	{
 		this( source, LinearIntensityMap.< T >interpolatorFactory( interpolation ) );
 	}
-	
+
 	@SuppressWarnings( { "rawtypes", "unchecked" } )
 	public < S extends NumericType< S > > void run( final RandomAccessibleInterval< S > image )
 	{
 		assert image.numDimensions() == dimensions.numDimensions() : "Number of dimensions do not match.";
-		
+
 		final double[] s = new double[ dimensions.numDimensions() ];
 		for ( int d = 0; d < s.length; ++d )
 			s[ d ] = image.dimension( d ) / dimensions.dimension( d );
 		final Scale scale = new Scale( s );
-		
+
 		System.out.println( "translation-n " + translation.numDimensions() );
-		
+
 		final RandomAccessibleInterval< RealComposite< T > > stretchedCoefficients =
 				Views.offsetInterval(
 						Views.raster(
@@ -127,10 +127,10 @@ public class LinearIntensityMap< T extends RealType< T > >
 												translation ),
 										scale ) ),
 						image );
-		
+
 		/* decide on type which mapping to use */
 		final S t = image.randomAccess().get();
-		
+
 		if ( ARGBType.class.isInstance( t ) )
 			mapARGB( Views.flatIterable( ( RandomAccessibleInterval< ARGBType > )image ), Views.flatIterable( stretchedCoefficients ) );
 		else if ( RealComposite.class.isInstance( t ) )
@@ -139,20 +139,22 @@ public class LinearIntensityMap< T extends RealType< T > >
 		{
 			final RealType< ? > r = ( RealType )t;
 			if ( r.getMinValue() > -Double.MAX_VALUE || r.getMaxValue() < Double.MAX_VALUE )
-				mapCrop( Views.flatIterable( ( RandomAccessibleInterval< RealType > )image ), Views.flatIterable( stretchedCoefficients ) );
+//			    TODO Bug in javac does not enable cast from RandomAccessibleInterval< S > to RandomAccessibleInterval< RealType >, remove when fixed
+				mapCrop( Views.flatIterable( ( RandomAccessibleInterval< RealType > )( Object )image ), Views.flatIterable( stretchedCoefficients ) );
 			else
-				map( Views.flatIterable( ( RandomAccessibleInterval< RealType > )image ), Views.flatIterable( stretchedCoefficients ) );
+//              TODO Bug in javac does not enable cast from RandomAccessibleInterval< S > to RandomAccessibleInterval< RealType >, remove when fixed
+				map( Views.flatIterable( ( RandomAccessibleInterval< RealType > )( Object )image ), Views.flatIterable( stretchedCoefficients ) );
 		}
-			
+
 	}
-	
+
 	final static protected < S extends RealType< S >, T extends RealType< T > > void map(
 			final IterableInterval< S > image,
 			final IterableInterval< RealComposite< T > > coefficients )
 	{
 		final Cursor< S > cs = image.cursor();
 		final Cursor< RealComposite< T > > ct = coefficients.cursor();
-		
+
 		while ( cs.hasNext() )
 		{
 			final S s = cs.next();
@@ -160,7 +162,7 @@ public class LinearIntensityMap< T extends RealType< T > >
 			s.setReal( s.getRealDouble() * t.get( 0 ).getRealDouble() + t.get( 1 ).getRealDouble() );
 		}
 	}
-	
+
 	final static protected < S extends RealType< S >, T extends RealType< T > > void mapCrop(
 			final IterableInterval< S > image,
 			final IterableInterval< RealComposite< T > > coefficients )
@@ -170,53 +172,53 @@ public class LinearIntensityMap< T extends RealType< T > >
 		final S firstValue = cs.next();
 		final double minS = firstValue.getMinValue();
 		final double maxS = firstValue.getMaxValue();
-		
+
 		while ( cs.hasNext() )
 		{
 			final S s = cs.next();
 			final RealComposite< T > t = ct.next();
-					
+
 			s.setReal( Math.max( minS, Math.min( maxS, s.getRealDouble() * t.get( 0 ).getRealDouble() + t.get( 1 ).getRealDouble() ) ) );
 		}
 	}
-	
+
 	final static protected < S extends RealType< S >, T extends RealType< T > > void mapComposite(
 			final IterableInterval< RealComposite< S > > image,
 			final IterableInterval< RealComposite< T > > coefficients )
 	{
 		final Cursor< RealComposite< S > > cs = image.cursor();
 		final Cursor< RealComposite< T > > ct = coefficients.cursor();
-		
+
 		while ( cs.hasNext() )
 		{
 			final RealComposite< S > c = cs.next();
 			final RealComposite< T > t = ct.next();
-			
+
 			for ( final S s : c )
 				s.setReal( s.getRealDouble() * t.get( 0 ).getRealDouble() + t.get( 1 ).getRealDouble() );
 		}
 	}
-	
+
 	final static protected < T extends RealType< T > > void mapARGB(
 			final IterableInterval< ARGBType > image,
 			final IterableInterval< RealComposite< T > > coefficients )
 	{
 		final Cursor< ARGBType > cs = image.cursor();
 		final Cursor< RealComposite< T > > ct = coefficients.cursor();
-		
+
 		while ( cs.hasNext() )
 		{
 			final RealComposite< T > t = ct.next();
 			final double alpha = t.get( 0 ).getRealDouble();
 			final double beta = t.get( 1 ).getRealDouble();
-			
+
 			final ARGBType s = cs.next();
 			final int argb = s.get();
 			final int a = ( ( argb >> 24 ) & 0xff );
 			final double r = ( ( argb >> 16 ) & 0xff ) * alpha + beta;
 			final double g = ( ( argb >> 8 ) & 0xff ) * alpha + beta;
 			final double b = ( argb & 0xff ) * alpha + beta;
-			
+
 			s.set(
 					( a << 24 ) |
 					( ( r < 0 ? 0 : r > 255 ? 255 : ( int )( r + 0.5 ) ) << 16 ) |
@@ -228,36 +230,36 @@ public class LinearIntensityMap< T extends RealType< T > >
 	public static void main( final String[] args )
 	{
 		new ImageJ();
-		
+
 		final double[] coefficients = new double[]{
 				0, 2, 4, 8,
 				1, 1, 1, 1,
 				1, 10, 5, 1,
 				1, 1, 1, 1,
-				
+
 				0, 10, 20, 30,
 				40, 50, 60, 70,
 				80, 90, 100, 110,
 				120, 130, 140, 150
 		};
-		
+
 		final LinearIntensityMap< DoubleType > transform = new LinearIntensityMap< DoubleType >( ArrayImgs.doubles( coefficients, 4, 4, 2 ) );
-		
+
 		//final ImagePlus imp = new ImagePlus( "http://upload.wikimedia.org/wikipedia/en/2/24/Lenna.png" );
 		final ImagePlus imp1 = new ImagePlus( "http://fly.mpi-cbg.de/~saalfeld/Pictures/norway.jpg");
-		
+
 		final ArrayImg< FloatType, FloatArray > image1 = ArrayImgs.floats( ( float[] )imp1.getProcessor().convertToFloatProcessor().getPixels(), imp1.getWidth(), imp1.getHeight() );
 		final ArrayImg< UnsignedByteType, ByteArray > image2 = ArrayImgs.unsignedBytes( ( byte[] )imp1.getProcessor().convertToByteProcessor().getPixels(), imp1.getWidth(), imp1.getHeight() );
 		final ArrayImg< UnsignedShortType, ShortArray > image3 = ArrayImgs.unsignedShorts( ( short[] )imp1.getProcessor().convertToShortProcessor().getPixels(), imp1.getWidth(), imp1.getHeight() );
 		final ArrayImg< ARGBType, IntArray > image4 = ArrayImgs.argbs( ( int[] )imp1.getProcessor().getPixels(), imp1.getWidth(), imp1.getHeight() );
-		
+
 		ImageJFunctions.show( ArrayImgs.doubles( coefficients, 4, 4, 2 ) );
-		
+
 		transform.run( image1 );
 		transform.run( image2 );
 		transform.run( image3 );
 		transform.run( image4 );
-		
+
 		ImageJFunctions.show( image1 );
 		ImageJFunctions.show( image2 );
 		ImageJFunctions.show( image3 );

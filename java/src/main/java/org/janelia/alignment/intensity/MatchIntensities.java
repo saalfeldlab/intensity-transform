@@ -345,7 +345,7 @@ public class MatchIntensities implements PlugIn
 	{
 		new ImageJ();
 
-		final double scale = 0.1;
+		final double scale = 0.2;
 		final int numCoefficients = 8;
 
 		final double lambda1 = 0.01;
@@ -365,7 +365,8 @@ public class MatchIntensities implements PlugIn
 //		final Project project = Project.openFSProject( "/data/saalfeld/bocklab/beasts/2808-2228.cleaned.xml", false );
 //		final Project project = Project.openFSProject( "/data_ssd2/saalfelds/rick/untitled2.xml", false );
 //		final Project project = Project.openFSProject( "/groups/saalfeld/saalfeldlab/experiments/fetter/2014-10-03.161-180.elastic.cleaned.xml", false );
-		final Project project = Project.openFSProject( "/data/saalfeld/bocklab/autoloader/movie/untitled.xml", false );
+//		final Project project = Project.openFSProject( "/data/saalfeld/bocklab/autoloader/movie/untitled.xml", false );
+        final Project project = Project.openFSProject( "/nobackup/saalfeld/L3/pretty/859.xml", false );
 		run( project, scale, numCoefficients, lambda1, lambda2, neighborWeight, neighborhoodWidth );
 
 		System.out.println( "Done." );
