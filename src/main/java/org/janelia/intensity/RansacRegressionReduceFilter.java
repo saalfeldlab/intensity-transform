@@ -1,7 +1,7 @@
 /**
  *
  */
-package org.janelia.alignment.intensity;
+package org.janelia.intensity;
 
 import java.util.Collection;
 import java.util.Iterator;

@@ -46,10 +46,6 @@ import mpicbg.models.TranslationModel1D;
 import net.imglib2.img.list.ListImg;
 import net.imglib2.img.list.ListRandomAccess;
 
-import org.janelia.alignment.intensity.PointMatchFilter;
-import org.janelia.alignment.intensity.RansacRegressionReduceFilter;
-import org.janelia.alignment.intensity.Render;
-
 /**
  * 
  * @author Stephan Saalfeld <saalfelds@janelia.hhmi.org>
